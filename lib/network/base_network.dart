@@ -6,13 +6,24 @@ class BaseNetwork {
       'https://681388b3129f6313e2119693.mockapi.io/api/v1/';
 
   static Future<List<dynamic>> getData(String endpoint) async {
-    final response = await http.get(Uri.parse(baseUrl + endpoint));
+    try {
+      final response = await http.get(Uri.parse(baseUrl + endpoint));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data[endpoint] ?? [];
-    } else {
-      throw Exception('Failed to load data!');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data is List) {
+          return data;
+        } else if (data is Map && data.containsKey(endpoint)) {
+          return data[endpoint] ?? [];
+        } else {
+          return [data];
+        }
+      } else {
+        throw Exception('Failed to load data! Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw e;
     }
   }
 
@@ -20,20 +31,24 @@ class BaseNetwork {
     String endpoint,
     int id,
   ) async {
-    final response = await http.get(Uri.parse(baseUrl + '$endpoint/$id'));
+    try {
+      final response = await http.get(Uri.parse(baseUrl + '$endpoint/$id'));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      if (data is List && data.isNotEmpty) {
-        return data.first;
-      } else if (data is Map<String, dynamic>) {
-        return data;
+        if (data is List && data.isNotEmpty) {
+          return data.first;
+        } else if (data is Map<String, dynamic>) {
+          return data;
+        } else {
+          throw Exception('Unexpected data format!');
+        }
       } else {
-        throw Exception('Unexpected data format!');
+        throw Exception('Failed to load detail data!');
       }
-    } else {
-      throw Exception('Failed to load detail data!');
+    } catch (e) {
+      throw e;
     }
   }
 }

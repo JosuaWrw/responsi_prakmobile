@@ -28,6 +28,7 @@ class _MovieListScreenState extends State<MovieListScreen>
   void _fetchData(String endpoint) {
     setState(() {
       _currentEndpoint = endpoint;
+      _errorMessage = null;
       _presenter.loadMovieData(endpoint);
     });
   }
@@ -43,6 +44,7 @@ class _MovieListScreenState extends State<MovieListScreen>
   void showMovieList(List<movie> movieList) {
     setState(() {
       _movieList = movieList;
+      _errorMessage = null;
     });
   }
 
@@ -50,12 +52,16 @@ class _MovieListScreenState extends State<MovieListScreen>
   void showError(String message) {
     setState(() {
       _errorMessage = message;
+      _isLoading = false;
     });
   }
 
   @override
   void showloading() {
-    _isLoading = true;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
   }
 
   @override
@@ -69,29 +75,41 @@ class _MovieListScreenState extends State<MovieListScreen>
                   ? Center(child: CircularProgressIndicator())
                   : _errorMessage != null
                       ? Center(child: Text("Error: $_errorMessage"))
-                      : ListView.builder(
-                          itemCount: _movieList.length,
-                          itemBuilder: (context, index) {
-                            final movie = _movieList[index];
-                            return ListTile(
-                                leading: movie.imageUrl.isNotEmpty
-                                    ? Image.network(movie.imageUrl)
-                                    : Image.network(
-                                        "https://placehold.co/600x400"),
-                                title: Text(movie.title),
-                                subtitle: Text(
-                                    "Rating: ${movie.rating} | Genre: ${movie.genre} | Duration: ${movie.duration}"),
-                                onTap: () {
-                                  [
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => DetailScreen(
-                                                id: movie.id,
-                                                endpoint: _currentEndpoint)))
-                                  ];
-                                });
-                          })),
+                      : _movieList.isEmpty
+                          ? Center(child: Text("No movies found"))
+                          : ListView.builder(
+                              itemCount: _movieList.length,
+                              itemBuilder: (context, index) {
+                                final movie = _movieList[index];
+                                return ListTile(
+                                    leading: movie.imgUrl.isNotEmpty
+                                        ? Image.network(
+                                            movie.imgUrl,
+                                            width: 50,
+                                            height: 75,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Image.network(
+                                                  "https://placehold.co/50x75");
+                                            },
+                                          )
+                                        : Image.network(
+                                            "https://placehold.co/50x75"),
+                                    title: Text(movie.title),
+                                    subtitle: Text(
+                                        "Rating: ${movie.rating} | Genre: ${movie.genre.join(", ")} | Duration: ${movie.duration}"),
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  DetailScreen(
+                                                      id: movie.id,
+                                                      endpoint:
+                                                          _currentEndpoint)));
+                                    });
+                              })),
         ],
       ),
     );
